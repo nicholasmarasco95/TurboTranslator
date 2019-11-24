@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -25,6 +26,10 @@ import java.util.logging.Logger;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONObject;
 
 /**
@@ -93,6 +98,11 @@ public class TurboReader implements Runnable{
     
     @Override
     public void run() {
+        
+        //***********DEBUG PURPOSE ONLY***********
+//        writeExcel(null, "C:\\Users\\nmarasco\\Desktop\\excelTest.xlsx", null);
+        //****************************************
+        
         this.textAreaLogs.append("Task started\n");
         if(fileImport){
             this.textAreaLogs.append("importing\n");
@@ -126,13 +136,14 @@ public class TurboReader implements Runnable{
         //check extension and filter file creating 3 columns (KEY, ENGLISH, LAN_TO_TRANSLATE)
         File file = new File(path);
         String tmpLine = "", toTranslateStr = "", translatedStr = "", autoTranslatedFileName = "", firstLine = "", 
-                translateComplete = "", tmpKey = "", jsonFileStr = "", noCommaStr = "";
+                translateComplete = "", tmpKey = "", jsonFileStr = "", sheetName = "";
         String split[];
-        ArrayList<String> listToWrite = new ArrayList<String>();
+        Object fileInfo[] = null;
+        ArrayList<Object[]> listToWrite = new ArrayList<Object[]>();
         String fileExtension = Utils.getFileExtension(file.getPath());
         Iterator<String> keyList;
         JSONObject tmpJsonObject;
-        if((autoTranslate && translateExport) || !autoTranslate) listToWrite.add(Utils.KEY_COLUMN_STRING + ", " + originLan + ", " + toTranslateLan);    //initizalize first line of file/list
+//        if((autoTranslate && translateExport) || !autoTranslate) listToWrite.add(Utils.KEY_COLUMN_STRING + ", " + originLan + ", " + toTranslateLan);    //initizalize first line of file/list
         if(!file.exists()){
             //*****************THROW ERROR*****************
             return;
@@ -142,38 +153,35 @@ public class TurboReader implements Runnable{
             BufferedReader brComList = new BufferedReader(frComList);
             switch(fileExtension){
                 case Utils.SUPPORTED_FORMAT.JS:{
+                    sheetName = "JS FILE";
                     while((tmpLine = brComList.readLine())!=null){
-                        if(tmpLine.contains("var") && tmpLine.contains("=") && tmpLine.contains("{")) firstLine = tmpLine;
+                        if((tmpLine.contains("var") || tmpLine.contains("module")) && tmpLine.contains("=") && tmpLine.contains("{")) firstLine = tmpLine;
                         if(tmpLine.contains(":")){
-                            tmpLine = "{" + tmpLine + "}";
+                            tmpLine = "{" + tmpLine + "}";                          //add curly braces to make it a JSON object
                             tmpJsonObject = new JSONObject(tmpLine);
                             keyList = tmpJsonObject.keys();
                             while(keyList.hasNext()){
-                                tmpKey = keyList.next();
+                                tmpKey = keyList.next();                            //even if a I Know that is a single key obj, I need to iterate
                             }
-                            tmpLine = tmpLine.substring(1, tmpLine.length()-1);
-                            noCommaStr = tmpJsonObject.getString(tmpKey).replaceAll(",", Utils.ESCAPE_COMMA_CHARACTER);
-                            tmpJsonObject.remove(tmpKey);
-                            tmpJsonObject.put(tmpKey, noCommaStr);
+                            tmpLine = tmpLine.substring(1, tmpLine.length()-1);     //remove curly braces
                             if(autoTranslate){
                                 translatedStr = onlineTranslator.translate(tmpJsonObject.getString(tmpKey), originLan, toTranslateLan);
-                                if(!translateExport){
-                                    tmpJsonObject.remove(tmpKey);
-                                    tmpJsonObject.put(tmpKey, translatedStr);
-                                    translateComplete = "\t\"" + tmpKey + "\": \"" +  tmpJsonObject.getString(tmpKey) + "\",";
-                                    listToWrite.add(translateComplete);
-                                }
-                                updateWordsTranslated();  
-                            }if((autoTranslate && translateExport) || !autoTranslate){
-                                if(translateExport) listToWrite.add(tmpKey + ", " + tmpJsonObject.getString(tmpKey) + ", " + translatedStr);
-                                else listToWrite.add(tmpKey + ", " + tmpJsonObject.getString(tmpKey) + ", ");
+                                listToWrite.add(rowBuilder(tmpKey, tmpJsonObject.getString(tmpKey), translatedStr));
+                            }else{
+                                listToWrite.add(rowBuilder(tmpKey, tmpJsonObject.getString(tmpKey), ""));
                             }
                         }
-                        else if(!tmpLine.contains("var")){                     //if contains var means that is the first line of file
-                            if(isComment(tmpLine)) listToWrite.add(tmpLine);    //if is a comment add line to list
-                            else listToWrite.add("");
+                        else if(!tmpLine.contains("var")){                      //if contains var means that is the first line of file
+                            if(isComment(tmpLine)) 
+                                listToWrite.add(rowBuilder(tmpLine, "", ""));   //if is a comment add line to list
+                            else listToWrite.add(rowBuilder("", "", ""));
                         }
                     }
+                    System.out.println("firstLine: " + firstLine);
+                    if(!fileImport && firstLine.length()>1){
+                        fileInfo = infoRowBuilder(sheetName, firstLine, "};");
+                    }
+                    /*
                     if((autoTranslate && translateExport) || !autoTranslate){
                         //add last line of information
                         listToWrite.add("");
@@ -184,9 +192,11 @@ public class TurboReader implements Runnable{
                         listToWrite.add(0, firstLine);
                         listToWrite.add("};");
                     }
+                    */
                     break;
                 }
                 case Utils.SUPPORTED_FORMAT.XML:{
+                    /*
                     while((tmpLine = brComList.readLine())!=null){
                         if(autoTranslate){
                             if(tmpLine.contains("<string") && !tmpLine.contains("translatable=\"false\"")){
@@ -225,8 +235,10 @@ public class TurboReader implements Runnable{
                     listToWrite.add(0, "<resources>");
                     autoTranslatedFileName = "strings." + Utils.SUPPORTED_FORMAT.XML;
                     listToWrite.add("</resources>");
+                    */
                     break;
                 }
+                /*
                 case Utils.SUPPORTED_FORMAT.JSON:{
                     while((tmpLine = brComList.readLine())!=null){
                         //write all file in a string to convert it to a json
@@ -250,6 +262,7 @@ public class TurboReader implements Runnable{
                     }
                 }
                 break;
+                */
             }
             brComList.close();
             frComList.close();
@@ -258,6 +271,7 @@ public class TurboReader implements Runnable{
         } catch (IOException ex) {
             Logger.getLogger(TurboReader.class.getName()).log(Level.SEVERE, null, ex);
         }
+        /*
         if(autoTranslate && !translateExport){
             this.textAreaLogs.append("translated, importing to project\n");
             writeFile(listToWrite, autoTranslatedFileName, utils.getFilePath(path));
@@ -268,6 +282,8 @@ public class TurboReader implements Runnable{
             writeFile(listToWrite, utils.exportFileNameCreator(path, fileExtension), settings.getStringValue(Utils.SETTINGS_KEY.OUTPUT_FOLDER));
             this.textAreaLogs.append("file exported\n");
         }
+        */
+        writeExcel(listToWrite, "C:\\Users\\nmarasco\\Desktop\\excelTest.xlsx", "", sheetName, fileInfo);
     }
     
     private boolean isComment(String str){
@@ -289,6 +305,67 @@ public class TurboReader implements Runnable{
             bufferedWriter.close();
         } catch (IOException ex) {
             Logger.getLogger(TurboReader.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private Object[] rowBuilder(String key, String originLan, String translatedLan){
+        //build a row to add to Excel file
+        Object[] row = {key, originLan, translatedLan};
+        return row;
+    }
+    
+    private Object[] infoRowBuilder(String sheetName, String startLine, String lastLine){
+        //build row for start and end line of file
+        Object[] row = {sheetName, startLine, lastLine};
+        return row;
+    }
+    
+    private void tabInfoManager(XSSFWorkbook workbook, Object[] fileInfo){
+        XSSFSheet infoSheet = workbook.getSheet(Utils.SHEET_INFO_NAME);
+        Cell tmpCell = null;
+        Row tmpRow = null;
+        int colCounter = 0;
+        if(infoSheet==null){
+            infoSheet = workbook.createSheet(Utils.SHEET_INFO_NAME);       //if info sheet doen't exists, it'll create it
+        }
+        tmpRow = infoSheet.createRow(infoSheet.getPhysicalNumberOfRows());
+        for(Object field : fileInfo){
+            tmpCell = (Cell) tmpRow.createCell(colCounter++);
+            tmpCell.setCellValue((String) field);
+        }
+    }
+    
+    private void writeExcel(ArrayList<Object[]> rowList, String fileName, String destPath, String sheetName, Object[] fileInfo){
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet(sheetName);
+        Iterator<Object[]> rowIterator = rowList.iterator();
+        Object[] tmpRowObj;
+        int rowCounter = 0;
+        int colCounter = 0;
+        Row tmpRow;
+        Cell tmpCell;
+        while(rowIterator.hasNext()){
+            tmpRowObj = rowIterator.next();
+            tmpRow = sheet.createRow(rowCounter++);
+            colCounter = 0;
+            for(Object field : tmpRowObj){
+                tmpCell = (Cell) tmpRow.createCell(colCounter++);
+                if(field instanceof String){
+                    tmpCell.setCellValue((String) field);
+                }else if(field instanceof Integer){
+                    tmpCell.setCellValue((Integer) field);
+                }
+            }
+        }
+        if(fileInfo!=null) tabInfoManager(workbook, fileInfo);
+        try {
+            FileOutputStream outputStream = new FileOutputStream(fileName);
+            workbook.write(outputStream);
+            workbook.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     

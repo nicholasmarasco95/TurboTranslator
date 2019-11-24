@@ -21,6 +21,7 @@ public class Utils {
     public static final String ESCAPE_COMMA_CHARACTER = "|";
     public static final String INFO_LINE = "---------INFO - DO NOT TRANSLATE---------";
     public static final String KEY_COLUMN_STRING = "KEYCODE";
+    public static final String SHEET_INFO_NAME = "filesInfo";
     
     public static String IMPORT_FILE_PATH;
 
