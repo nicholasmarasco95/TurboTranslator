@@ -42,10 +42,8 @@ public class Utils {
         public static final String LANG_INPUT = "laninput";
     }
     
-    public String exportFileNameCreator(String path, String originExtension){
-        //this will create the name of file that'll be exported. It includes FOLDER_ORIGINFILENAME_ORIGINEXTENSION_LANG.EXTENSION
-        return getFileDirectory(path) + "_" + getFileName(path) + "_" + originExtension + "_" 
-                + settings.getStringValue(SETTINGS_KEY.LANG_OUTPUT) + OUTPUT_FILE_EXTENSION;
+    public String getSheetName(int fileNumber, String fileName){
+        return fileNumber + "_" + fileName;
     }
     
     public String getImportFileExtension(String fileName){
@@ -59,8 +57,8 @@ public class Utils {
         return path.substring(path.lastIndexOf("\\")+1, path.length());     //get and return directory
     }
     
-    private String getFileName(String path){
-        return path.substring(path.lastIndexOf("\\")+1, path.lastIndexOf("."));
+    public String getFileName(String path){
+        return path.substring(path.lastIndexOf("\\")+1, path.length());
     }
     
     public String getTranslatedFileName(String path, String importFileExtension){
