@@ -12,6 +12,7 @@ import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -33,6 +34,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONObject;
@@ -113,8 +117,19 @@ public class TurboReader implements Runnable{
     public void run() {
         
         //***********DEBUG PURPOSE ONLY***********
-//        writeExcel(null, "C:\\Users\\nmarasco\\Desktop\\excelTest.xlsx", null);
+//        readSheetExcelFile("C:\\Users\\nmarasco\\Desktop\\mirroring.xlsx");
         //****************************************
+        
+        /*
+        Iterator<Sheet> itSheet = sheetList.iterator();
+        int counter = 0 ;
+        while(itSheet.hasNext()){
+            Sheet tmpSheet = itSheet.next();
+            buildFileImport(tmpSheet, counter + "_" + tmpSheet.getSheetName(), "C:\\Users\\nmarasco\\Desktop\\");
+            counter++;
+        }
+        */
+        
         
         this.textAreaLogs.append("Task started\n");
         if(fileImport){
@@ -131,8 +146,9 @@ public class TurboReader implements Runnable{
                 fileSplitter(tmpFilePath);
                 updateFileDone();
             }
-            writeExcel("C:\\Users\\nmarasco\\Desktop\\excelTest.xlsx");
+            writeExcel("C:\\Users\\nmarasco\\Desktop\\brochesia_translation.xlsx");
         }
+        
         this.textAreaLogs.append("**********DONE!**********\n");
     }
     
@@ -149,8 +165,7 @@ public class TurboReader implements Runnable{
     private void fileSplitter(String path){
         //check extension and filter file creating 3 columns (KEY, ENGLISH, LAN_TO_TRANSLATE)
         File file = new File(path);
-        String tmpLine = "", toTranslateStr = "", translatedStr = "", autoTranslatedFileName = "", firstLine = "", 
-                translateComplete = "", tmpKey = "", jsonFileStr = "", sheetName = "";
+        String tmpLine = "", translatedStr = "", firstLine = "", tmpKey = "", jsonFileStr = "", sheetName = "";
         String split[];
         Object fileInfoObj[] = null;
         ArrayList<Object[]> listToWrite = new ArrayList<Object[]>();
@@ -339,7 +354,7 @@ public class TurboReader implements Runnable{
         }
     }
     
-    private void writeExcel(String fileName){
+    private void writeExcel(String filePath){
         XSSFWorkbook workbook = new XSSFWorkbook();
         Iterator sheetIt = fileMapToWrite.entrySet().iterator();
         Map.Entry tmpEntry;
@@ -369,7 +384,7 @@ public class TurboReader implements Runnable{
             if(this.fileInfoList!=null) sheetInfoManager(workbook, this.fileInfoList);
         }
         try {
-            FileOutputStream outputStream = new FileOutputStream(fileName);
+            FileOutputStream outputStream = new FileOutputStream(filePath);
             workbook.write(outputStream);
             workbook.close();
         } catch (FileNotFoundException e) {
@@ -377,6 +392,139 @@ public class TurboReader implements Runnable{
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    private ArrayList<Sheet> sheetList;
+    private ArrayList<Object[]> sheetInfoRows;
+    
+    private void readSheetInfo(Sheet sheetInfo){
+        //read sheetInfo and populate sheet Object List
+        Iterator<Row> rowIt = sheetInfo.iterator();
+        sheetInfoRows = new ArrayList();
+        Object[] rowObj;
+        Cell tmpCell;
+        int cellCounter;
+        while(rowIt.hasNext()){
+            Row row = rowIt.next();
+            Iterator<Cell> cellIt = row.iterator();
+            rowObj = new Object[4];
+            cellCounter = 0;
+            while(cellIt.hasNext()){
+                //iterate cells and put the value into a Object[]
+                tmpCell = cellIt.next();
+                rowObj[cellCounter] = tmpCell.getStringCellValue();
+                cellCounter++;
+            }
+            sheetInfoRows.add(rowObj);  //add cell object into row ArrayList
+        }
+    }
+    
+    private void readSheetExcelFile(String filePath){
+        //read file's sheets and place them into an ArrayList
+        FileInputStream excelFile = null;
+        try {
+            sheetList = new ArrayList();
+            Sheet tmpSheet;
+            excelFile = new FileInputStream(new File(filePath));
+            Workbook workbook = new XSSFWorkbook(excelFile);
+            int sheetCount = workbook.getNumberOfSheets();
+            for(int sheetCounter = 0; sheetCounter<sheetCount; sheetCounter++){
+                //iterate file sheets and fill sheetList
+                tmpSheet = workbook.getSheetAt(sheetCounter);
+                sheetList.add(tmpSheet);        //add sheet to list
+                if(tmpSheet.getSheetName().equals(Utils.SHEET_INFO_NAME)) readSheetInfo(tmpSheet);  //if is sheet info, call method to read and populate sheet row array
+                
+            }
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(TurboReader.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(TurboReader.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                excelFile.close();
+            } catch (IOException ex) {
+                Logger.getLogger(TurboReader.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    private void buildFileImport(Sheet sheet, String fileName, String destPath){
+        //build file that can be imported into project
+        String fileBegin = "", fileEnd = "", lineToWrite = "", jsonFilePath = "";
+        ArrayList<String> listRowToWrite = new ArrayList<String>();
+        Iterator<Object[]> rowListIt = sheetInfoRows.iterator();
+        Object[] infoRowObj;
+        Row tmpRow;
+        Cell tmpCell;
+        Iterator<Row> rowIt = sheet.iterator();
+        while(rowListIt.hasNext()){
+            infoRowObj = rowListIt.next();
+            if(infoRowObj[0].equals(sheet.getSheetName())){
+                fileBegin = infoRowObj[1].toString();       //get file start from col[1]
+                fileEnd = infoRowObj[2].toString();         //get file end from col[2]
+                if(Utils.getFileExtension(sheet.getSheetName()).equals(Utils.SUPPORTED_FORMAT.JSON) 
+                        && (infoRowObj[3]==null || infoRowObj[3].toString().length()<2)){
+                    //JSON need path to get structure. If path cell is empty, show log error and return
+                    String err = "JSON path not found, cannot build file. Skip file!";                      //TODO: SHOW ERROR MESSAGE AND RETURN
+                    return;
+                }
+                jsonFilePath = infoRowObj[3].toString();        //get file path from col[3]
+                break;                                      //if row that has col [0] == to file name, break (row found)
+            }
+        }
+        listRowToWrite.add(fileBegin);
+        switch(Utils.getFileExtension(sheet.getSheetName())){
+            case(Utils.SUPPORTED_FORMAT.JS):{
+                while(rowIt.hasNext()){
+                    tmpRow = rowIt.next();
+                    if((tmpRow.getCell(0).getCellTypeEnum() == CellType.STRING && tmpRow.getCell(0).getStringCellValue().length()<2) 
+                            || isComment(tmpRow.getCell(0).getStringCellValue())) listRowToWrite.add(tmpRow.getCell(0).getStringCellValue());      //if is a comment, add first cell as a line
+                    else{
+                        lineToWrite = "\t\"" + tmpRow.getCell(0).getStringCellValue() + "\": \"";
+                        if(tmpRow.getPhysicalNumberOfCells()>2 && tmpRow.getCell(2)!=null){
+                            tmpCell = tmpRow.getCell(2);
+                            if(tmpCell.getCellTypeEnum() == CellType.STRING) lineToWrite += tmpCell.getStringCellValue();
+                            else if(tmpCell.getCellTypeEnum() == CellType.NUMERIC) lineToWrite += tmpCell.getNumericCellValue();
+                        }else{
+                            tmpCell = tmpRow.getCell(1);                        //somehow the line wasn't translated
+                            if(tmpCell.getCellTypeEnum() == CellType.STRING) lineToWrite += tmpCell.getStringCellValue();
+                            else if(tmpCell.getCellTypeEnum() == CellType.NUMERIC) lineToWrite += tmpCell.getNumericCellValue();
+                        }
+                        lineToWrite += "\",";
+                        listRowToWrite.add(lineToWrite);
+                    }
+                }
+                break;
+            }
+            case(Utils.SUPPORTED_FORMAT.XML):{
+                while(rowIt.hasNext()){
+                    tmpRow = rowIt.next();
+                    if((tmpRow.getCell(0).getCellTypeEnum() == CellType.STRING && tmpRow.getCell(0).getStringCellValue().length()<2) 
+                            || isComment(tmpRow.getCell(0).getStringCellValue())) listRowToWrite.add(tmpRow.getCell(0).getStringCellValue());      //if is a comment, add first cell as a line
+                    else{
+                        lineToWrite = "\t<string name=\"";
+                        lineToWrite += tmpRow.getCell(0).getStringCellValue() + "\">";
+                        if(tmpRow.getPhysicalNumberOfCells()>2 && tmpRow.getCell(2)!=null){
+                            tmpCell = tmpRow.getCell(2);
+                            if(tmpCell.getCellTypeEnum() == CellType.STRING) lineToWrite += tmpCell.getStringCellValue();
+                            else if(tmpCell.getCellTypeEnum() == CellType.NUMERIC) lineToWrite += tmpCell.getNumericCellValue();  
+                        }else{
+                            tmpCell = tmpRow.getCell(1);                        //somehow the line wasn't translated
+                            if(tmpCell.getCellTypeEnum() == CellType.STRING) lineToWrite += tmpCell.getStringCellValue();
+                            else if(tmpCell.getCellTypeEnum() == CellType.NUMERIC) lineToWrite += tmpCell.getNumericCellValue();
+                        }
+                        lineToWrite += "</string>";
+                        listRowToWrite.add(lineToWrite);
+                    }
+                }
+                break;
+            }
+            case(Utils.SUPPORTED_FORMAT.JSON):{
+//                fileSplitter(jsonFilePath);     //read file, split and populate fileMapToWrite
+            }
+        }
+        listRowToWrite.add(fileEnd);
+        writeFile(listRowToWrite, fileName, destPath);
     }
     
     private void importFileBuilder(String translatedPath, String destinationFilePath){
