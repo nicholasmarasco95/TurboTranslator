@@ -5,9 +5,6 @@
  */
 package turbotranslatorcode;
 
-import com.google.gson.Gson;
-import com.gtranslate.Language;
-import com.gtranslate.Translator;
 import java.awt.Color;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -52,7 +49,6 @@ import org.xml.sax.SAXException;
  */
 public class TurboReader implements Runnable{
     
-    private ArrayList<String> listTranslated;
     private Settings settings;
     private Utils utils;
     private OnlineTranslator onlineTranslator;
@@ -70,6 +66,9 @@ public class TurboReader implements Runnable{
     private String outputFolder;
     private HashMap<String, String> jsonKeysValuesList;
     private ArrayList<Object[]> fileInfoList;
+    private HashMap<String, ArrayList<Object[]>> fileMapToWrite = new HashMap<String, ArrayList<Object[]>>();
+    private ArrayList<Sheet> sheetList;
+    private ArrayList<Object[]> sheetInfoRows;
     
 
     public TurboReader(boolean autoTranslate, boolean translateExport, boolean fileImport, JTextArea textAreaLogs, JLabel textWordsTranslated, JLabel textFilesDone) {
@@ -94,48 +93,21 @@ public class TurboReader implements Runnable{
         currentPathList = settings.getPathList();
         this.outputFolder = settings.getStringValue(Utils.SETTINGS_KEY.OUTPUT_FOLDER);
         this.fileInfoList = new ArrayList<Object[]>();
-        
-        //***********DEBUG PURPOSE ONLY***********
-//        currentPathList = new ArrayList();
-//        currentPathList.add("C:\\Users\\nmarasco\\Documents\\Progetti\\bview-3\\app_api\\i18n\\en.js");                             
-//        currentPathList.add("C:\\Users\\nmarasco\\Documents\\Progetti\\bview-3\\public\\js\\i18n\\en.js");                             
-//        currentPathList.add("C:\\Users\\nmarasco\\Documents\\Progetti\\bview-3\\public\\js\\i18n\\pixie\\en.js");                             
-//        currentPathList.add("C:\\Users\\nmarasco\\Documents\\Progetti\\bview_chrome_extension_2\\i18n\\en.js");                             
-//        currentPathList.add("C:\\Users\\nmarasco\\Documents\\Progetti\\bview_android\\app\\src\\main\\res\\values\\strings.xml");   
-//        settings.saveSetting("string", Utils.SETTINGS_KEY.OUTPUT_FOLDER, "C:\\Users\\nmarasco\\Desktop\\Traduzioni Spagnolo");
-//        settings.saveSetting("string", Utils.SETTINGS_KEY.LANG_OUTPUT, "it");
-//        settings.saveSetting("string", Utils.SETTINGS_KEY.LANG_INPUT, "en");
-        //****************************************
-        
-        //***********DEBUG PURPOSE ONLY***********
-//        importFileBuilder("C:\\Users\\nmarasco\\Desktop\\i18n_en_js_ITA.csv", "C:\\Users\\nmarasco\\Desktop");
-//        importFileBuilder("C:\\Users\\nmarasco\\Desktop\\values_strings_xml_ITA.csv", "C:\\Users\\nmarasco\\Desktop");
-        //****************************************
     }
     
     @Override
     public void run() {
-        
-        //***********DEBUG PURPOSE ONLY***********
-//        readSheetExcelFile("C:\\Users\\nmarasco\\Desktop\\mirroring.xlsx");
-        //****************************************
-        
-        /*
-        Iterator<Sheet> itSheet = sheetList.iterator();
-        int counter = 0 ;
-        while(itSheet.hasNext()){
-            Sheet tmpSheet = itSheet.next();
-            buildFileImport(tmpSheet, counter + "_" + tmpSheet.getSheetName(), "C:\\Users\\nmarasco\\Desktop\\");
-            counter++;
-        }
-        */
-        
-        
         this.textAreaLogs.append("Task started\n");
         if(fileImport){
             this.textAreaLogs.append("importing\n");
-            importFileBuilder(Utils.IMPORT_FILE_PATH, outputFolder);
-            this.textAreaLogs.append("File Saved on: " + outputFolder + "\n");
+            readSheetExcelFile(Utils.IMPORT_FILE_PATH);
+            Iterator<Sheet> itSheet = sheetList.iterator();
+            while(itSheet.hasNext()){
+                Sheet tmpSheet = itSheet.next();
+                if(!tmpSheet.equals(Utils.SHEET_INFO_NAME)){
+                    buildFileImport(tmpSheet);
+                }
+            }
         }
         else{
             Iterator<String> currentPathIt = currentPathList.iterator();
@@ -146,9 +118,8 @@ public class TurboReader implements Runnable{
                 fileSplitter(tmpFilePath);
                 updateFileDone();
             }
-            writeExcel("C:\\Users\\nmarasco\\Desktop\\brochesia_translation.xlsx");
+            writeExcel(Utils.getExportFileName());
         }
-        
         this.textAreaLogs.append("**********DONE!**********\n");
     }
     
@@ -166,7 +137,6 @@ public class TurboReader implements Runnable{
         //check extension and filter file creating 3 columns (KEY, ENGLISH, LAN_TO_TRANSLATE)
         File file = new File(path);
         String tmpLine = "", translatedStr = "", firstLine = "", tmpKey = "", jsonFileStr = "", sheetName = "";
-        String split[];
         Object fileInfoObj[] = null;
         ArrayList<Object[]> listToWrite = new ArrayList<Object[]>();
         String fileExtension = Utils.getFileExtension(file.getPath());
@@ -175,7 +145,7 @@ public class TurboReader implements Runnable{
         sheetName = utils.getSheetName(filesDone, utils.getFileName(path));
         listToWrite.add(rowBuilder(Utils.KEY_COLUMN_STRING, originLan, toTranslateLan));    //initizalize first line of file/list
         if(!file.exists()){
-            //*****************THROW ERROR*****************
+            JOptionPane.showMessageDialog(null, "Path not found, skipping file: " + path, "Error", JOptionPane.ERROR);
             return;
         }
         try{
@@ -208,7 +178,7 @@ public class TurboReader implements Runnable{
                         }
                     }
                     if(!fileImport && firstLine.length()>1){
-                        fileInfoObj = infoRowBuilder(sheetName, firstLine, "};");
+                        fileInfoObj = infoRowBuilder(sheetName, firstLine, "};", path);
                     }
                     break;
                 }
@@ -238,7 +208,7 @@ public class TurboReader implements Runnable{
                             }
                         }
                     }
-                    fileInfoObj = infoRowBuilder(sheetName, firstLine, "</resources>");
+                    fileInfoObj = infoRowBuilder(sheetName, firstLine, "</resources>", path);
                     break;
                 }
                 case Utils.SUPPORTED_FORMAT.JSON:{
@@ -263,7 +233,7 @@ public class TurboReader implements Runnable{
                             listToWrite.add(rowBuilder(tmpEntry.getKey().toString(), tmpEntry.getValue().toString(), ""));
                         }
                     }
-                    fileInfoObj = infoRowBuilder(sheetName, firstLine, "}");
+                    fileInfoObj = infoRowBuilder(sheetName, firstLine, "}", path);
                 }
                 break;
             }
@@ -281,9 +251,6 @@ public class TurboReader implements Runnable{
         fileMapToWrite.put(sheetName, listToWrite);
         this.fileInfoList.add(fileInfoObj);
     }
-    
-    private HashMap<String, ArrayList<Object[]>> fileMapToWrite = new HashMap<String, ArrayList<Object[]>>();
-    
     
     private void jsonParser(JSONObject jsonObj){
         Iterator<String> keyListIt = jsonObj.keys();
@@ -325,9 +292,9 @@ public class TurboReader implements Runnable{
         return row;
     }
     
-    private Object[] infoRowBuilder(String sheetName, String startLine, String lastLine){
+    private Object[] infoRowBuilder(String sheetName, String startLine, String lastLine, String originalFilePath){
         //build row for start and end line of file
-        Object[] row = {sheetName, startLine, lastLine};
+        Object[] row = {sheetName, startLine, lastLine, originalFilePath};
         return row;
     }
     
@@ -394,9 +361,6 @@ public class TurboReader implements Runnable{
         }
     }
     
-    private ArrayList<Sheet> sheetList;
-    private ArrayList<Object[]> sheetInfoRows;
-    
     private void readSheetInfo(Sheet sheetInfo){
         //read sheetInfo and populate sheet Object List
         Iterator<Row> rowIt = sheetInfo.iterator();
@@ -448,9 +412,9 @@ public class TurboReader implements Runnable{
         }
     }
     
-    private void buildFileImport(Sheet sheet, String fileName, String destPath){
+    private void buildFileImport(Sheet sheet){
         //build file that can be imported into project
-        String fileBegin = "", fileEnd = "", lineToWrite = "", jsonFilePath = "";
+        String fileBegin = "", fileEnd = "", lineToWrite = "", originalDestPath = "", fileName = "";
         ArrayList<String> listRowToWrite = new ArrayList<String>();
         Iterator<Object[]> rowListIt = sheetInfoRows.iterator();
         Object[] infoRowObj;
@@ -460,21 +424,16 @@ public class TurboReader implements Runnable{
         while(rowListIt.hasNext()){
             infoRowObj = rowListIt.next();
             if(infoRowObj[0].equals(sheet.getSheetName())){
-                fileBegin = infoRowObj[1].toString();       //get file start from col[1]
-                fileEnd = infoRowObj[2].toString();         //get file end from col[2]
-                if(Utils.getFileExtension(sheet.getSheetName()).equals(Utils.SUPPORTED_FORMAT.JSON) 
-                        && (infoRowObj[3]==null || infoRowObj[3].toString().length()<2)){
-                    //JSON need path to get structure. If path cell is empty, show log error and return
-                    String err = "JSON path not found, cannot build file. Skip file!";                      //TODO: SHOW ERROR MESSAGE AND RETURN
-                    return;
-                }
-                jsonFilePath = infoRowObj[3].toString();        //get file path from col[3]
+                fileBegin = infoRowObj[1].toString();           //get file start from col[1]
+                fileEnd = infoRowObj[2].toString();             //get file end from col[2]
+                originalDestPath = utils.getFilePath(infoRowObj[3].toString());    //get file end from col[3]
                 break;                                      //if row that has col [0] == to file name, break (row found)
             }
         }
         listRowToWrite.add(fileBegin);
         switch(Utils.getFileExtension(sheet.getSheetName())){
             case(Utils.SUPPORTED_FORMAT.JS):{
+                fileName = settings.getStringValue(Utils.SETTINGS_KEY.LANG_OUTPUT) + ".js";
                 while(rowIt.hasNext()){
                     tmpRow = rowIt.next();
                     if((tmpRow.getCell(0).getCellTypeEnum() == CellType.STRING && tmpRow.getCell(0).getStringCellValue().length()<2) 
@@ -497,6 +456,8 @@ public class TurboReader implements Runnable{
                 break;
             }
             case(Utils.SUPPORTED_FORMAT.XML):{
+                fileName = "strings.xml";
+                originalDestPath = Utils.androidPathBuilder(originalDestPath);      //with Android folder destination must be changed since it's based on folder and not on files
                 while(rowIt.hasNext()){
                     tmpRow = rowIt.next();
                     if((tmpRow.getCell(0).getCellTypeEnum() == CellType.STRING && tmpRow.getCell(0).getStringCellValue().length()<2) 
@@ -520,80 +481,23 @@ public class TurboReader implements Runnable{
                 break;
             }
             case(Utils.SUPPORTED_FORMAT.JSON):{
-//                fileSplitter(jsonFilePath);     //read file, split and populate fileMapToWrite
+                JOptionPane.showMessageDialog(null, "JSON import is not supported!", "Warning", JOptionPane.WARNING_MESSAGE);
             }
         }
         listRowToWrite.add(fileEnd);
-        writeFile(listRowToWrite, fileName, destPath);
-    }
-    
-    private void importFileBuilder(String translatedPath, String destinationFilePath){
-        //get file translated and build file back
-        File fileToTranslate = new File(translatedPath);
-        boolean isInfoSection = false;
-        String tmpReadLine, tmpWriteLine;
-        String split[];
-        String importFileExtension = utils.getImportFileExtension(translatedPath);
-        ArrayList<String> listTranslated = new ArrayList();
-        if(!fileToTranslate.exists()){
-            JOptionPane.showMessageDialog(null, "FATAL: File not found", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        try{
-            FileReader frComList = new FileReader(translatedPath);
-            BufferedReader brComList = new BufferedReader(frComList);
-            switch(importFileExtension){
-                case Utils.SUPPORTED_FORMAT.JS:{
-                    while((tmpReadLine = brComList.readLine())!=null){
-                        if(isInfoSection){
-                            listTranslated.add(0, tmpReadLine);
-                        }
-                        else if(tmpReadLine.contains(",")){
-                            split = tmpReadLine.split(",");
-                            if(split.length == 3){
-                                split[2] = split[2].replace(Utils.ESCAPE_COMMA_CHARACTER, ",");
-                                tmpWriteLine = "\t" + "\"" + split[0] + "\": " + "\"" + split[2] + "\",";
-                                if(!split[0].contains(Utils.KEY_COLUMN_STRING)) listTranslated.add(tmpWriteLine);
-                            }else{
-                                listTranslated.add(Utils.LINE_ERROR_MESSAGE);
-                            }
-                        }
-                        else if(tmpReadLine.contains(Utils.INFO_LINE)) isInfoSection = true;
-                        else{
-                            if(isComment(tmpReadLine)) listTranslated.add(tmpReadLine);    //if is a comment add line to list
-                            else listTranslated.add("");                                   //if is not a comment add empty line
-                        }
-                    }
-                    listTranslated.add("};");
-                    break;
-                }
-                case Utils.SUPPORTED_FORMAT.XML:{
-                    listTranslated.add("<resources>");
-                    while((tmpReadLine = brComList.readLine())!=null){
-                        if(tmpReadLine.contains(",")){
-                            split = tmpReadLine.split(",");
-                            if(split.length == 3){
-                                split[2] = split[2].replace(Utils.ESCAPE_COMMA_CHARACTER, ",");
-                                tmpWriteLine = "\t" + "<string name=\"" + split[0] + "\">" + split[2] + "</string>";
-                                if(!split[0].contains(Utils.KEY_COLUMN_STRING)) listTranslated.add(tmpWriteLine);
-                            }else{
-                                if(isComment(tmpReadLine)) listTranslated.add(tmpReadLine.replaceAll(",", ""));   //if is a comment, remove commas
-                                else listTranslated.add("");
-                            }
-                        }else{
-                            if(isComment(tmpReadLine)) listTranslated.add(tmpReadLine);    //if is a comment add line to list
-                            else listTranslated.add("");                                   //if is not a comment add empty line
-                        }
-                    }
-                    listTranslated.add("</resources>");
-                    break;
-                }
+        if(new File(originalDestPath).exists()){
+            writeFile(listRowToWrite, fileName, originalDestPath);
+            this.textAreaLogs.append("File Saved on: " + originalDestPath + "\n");
+        }else{
+            //if file path got from filesInfo sheet doesn't exists, export to OUTPUT_FOLDER
+            String defaultExportPath = settings.getStringValue(Utils.SETTINGS_KEY.OUTPUT_FOLDER);
+            JOptionPane.showMessageDialog(null, "Original File Path doen's exists, exporting to: " + defaultExportPath, "Warning", JOptionPane.WARNING_MESSAGE);
+            if(!Utils.pathExists(defaultExportPath)){
+                JOptionPane.showMessageDialog(null, "Path not found, aborting", "Error", JOptionPane.ERROR);
+                return;
             }
-            writeFile(listTranslated, utils.getTranslatedFileName(translatedPath, importFileExtension), destinationFilePath);
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(TurboReader.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(TurboReader.class.getName()).log(Level.SEVERE, null, ex);
+            writeFile(listRowToWrite, fileName, defaultExportPath);
+            this.textAreaLogs.append("File Saved on: " + defaultExportPath + "\n");
         }
     }
     

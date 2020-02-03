@@ -21,14 +21,12 @@ import java.util.logging.Logger;
  */
 public class OnlineTranslator {
     
-    private static String KEY = "trnsl.1.1.20191120T151323Z.6130744a437fc687.83266bea27b4414b6d8456f511d87cd749096d27";
-    
     public String translate(String textToTranslate, String originLan, String translateLan){
         URL url;
         StringBuilder sb = new StringBuilder();
         try {
             String text = URLEncoder.encode(textToTranslate, "UTF-8");
-            url = new URL("https://translate.yandex.net/api/v1.5/tr.json/translate?key=" + KEY + "&text=" + text 
+            url = new URL("https://translate.yandex.net/api/v1.5/tr.json/translate?key=" + Utils.getYandexKey() + "&text=" + text 
                     + "&lang=" + originLan + "-" + translateLan);
             URLConnection con = url.openConnection();
             HttpURLConnection http = (HttpURLConnection)con;

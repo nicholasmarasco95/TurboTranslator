@@ -7,8 +7,6 @@ package turbotranslatorcode;
 
 import java.awt.Color;
 import java.io.File;
-import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.swing.JOptionPane;
@@ -26,14 +24,10 @@ public class MainGUI extends javax.swing.JFrame {
     private Settings settings;
     private boolean error;
     
-    
     public MainGUI() {
         initComponents();
         this.settings = new Settings();
         this.error = false;
-        
-        this.txtPicturePath.setEnabled(false);
-        this.btnFlag.setEnabled(false);
         
         refreshGui();
     }
@@ -100,6 +94,15 @@ public class MainGUI extends javax.swing.JFrame {
             this.textStatus.setText("READY");
             this.textStatus.setForeground(Color.blue);
         }
+        
+        //YANDEX KEY
+        String yandexKey = Utils.getYandexKey();
+        if(yandexKey == null || yandexKey.length()<=2){
+            this.btnYandexKey.setForeground(Color.red);
+            btnTranslateAdd.setEnabled(false);
+            btnTranslateExport.setEnabled(false);
+        }
+        else this.btnYandexKey.setForeground(Color.black);
     }
     
     private boolean checkFilePath(String path, boolean isCsv){
@@ -166,7 +169,7 @@ public class MainGUI extends javax.swing.JFrame {
         jButton4 = new javax.swing.JButton();
         jSeparator4 = new javax.swing.JSeparator();
         jLabel18 = new javax.swing.JLabel();
-        jButton5 = new javax.swing.JButton();
+        btnYandexKey = new javax.swing.JButton();
         jLabel19 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         textAreaLogs = new javax.swing.JTextArea();
@@ -174,11 +177,6 @@ public class MainGUI extends javax.swing.JFrame {
         btnTranslateExport = new javax.swing.JButton();
         btnExportFiles = new javax.swing.JButton();
         btnImportFile = new javax.swing.JButton();
-        jLabel20 = new javax.swing.JLabel();
-        jRadioButton1 = new javax.swing.JRadioButton();
-        jRadioButton2 = new javax.swing.JRadioButton();
-        txtPicturePath = new javax.swing.JLabel();
-        btnFlag = new javax.swing.JButton();
         jLabel5 = new javax.swing.JLabel();
         textInputStr = new javax.swing.JLabel();
         fieldInput = new javax.swing.JTextField();
@@ -188,6 +186,7 @@ public class MainGUI extends javax.swing.JFrame {
         btnSave = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Turbo Translator");
         setResizable(false);
 
         jLabel1.setFont(new java.awt.Font("Microsoft Tai Le", 1, 18)); // NOI18N
@@ -272,8 +271,13 @@ public class MainGUI extends javax.swing.JFrame {
         jLabel18.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
         jLabel18.setText("Yandex Key");
 
-        jButton5.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
-        jButton5.setText("Edit Key");
+        btnYandexKey.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
+        btnYandexKey.setText("Edit Key");
+        btnYandexKey.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnYandexKeyActionPerformed(evt);
+            }
+        });
 
         jLabel19.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
         jLabel19.setText("Logs");
@@ -315,24 +319,6 @@ public class MainGUI extends javax.swing.JFrame {
             }
         });
 
-        jLabel20.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
-        jLabel20.setText("Code Writer");
-
-        jRadioButton1.setText("ON");
-
-        jRadioButton2.setText("OFF");
-        jRadioButton2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jRadioButton2ActionPerformed(evt);
-            }
-        });
-
-        txtPicturePath.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
-        txtPicturePath.setText("EMPTY");
-
-        btnFlag.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
-        btnFlag.setText("Flag Picture Path");
-
         jLabel5.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
         jLabel5.setText("Language Settings (i18n)");
 
@@ -340,10 +326,10 @@ public class MainGUI extends javax.swing.JFrame {
         textInputStr.setText("Input Language: ");
 
         fieldInput.addInputMethodListener(new java.awt.event.InputMethodListener() {
+            public void caretPositionChanged(java.awt.event.InputMethodEvent evt) {
+            }
             public void inputMethodTextChanged(java.awt.event.InputMethodEvent evt) {
                 fieldInputInputMethodTextChanged(evt);
-            }
-            public void caretPositionChanged(java.awt.event.InputMethodEvent evt) {
             }
         });
         fieldInput.addActionListener(new java.awt.event.ActionListener() {
@@ -384,11 +370,7 @@ public class MainGUI extends javax.swing.JFrame {
                                 .addComponent(jLabel3)
                                 .addGap(18, 18, 18)
                                 .addComponent(txtFileNumber))
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 266, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(btnFlag)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(txtPicturePath)))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 266, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
@@ -400,7 +382,7 @@ public class MainGUI extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel18)
-                                    .addComponent(jButton5))
+                                    .addComponent(btnYandexKey))
                                 .addGap(37, 37, 37))
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -426,14 +408,7 @@ public class MainGUI extends javax.swing.JFrame {
                                 .addGap(30, 30, 30)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(btnImportFile)
-                                    .addComponent(btnExportFiles))
-                                .addGap(18, 18, 18)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addComponent(jRadioButton1)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(jRadioButton2))
-                                    .addComponent(jLabel20))))
+                                    .addComponent(btnExportFiles))))
                         .addGap(0, 16, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -507,15 +482,11 @@ public class MainGUI extends javax.swing.JFrame {
                             .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                                 .addComponent(jLabel18)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jButton5)))
+                                .addComponent(btnYandexKey)))
                         .addGap(19, 19, 19))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(btnFlag)
-                            .addComponent(txtPicturePath))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)))
+                        .addGap(44, 44, 44)))
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(txtExportPath))
@@ -560,24 +531,17 @@ public class MainGUI extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnTranslateAdd)
-                    .addComponent(btnExportFiles)
-                    .addComponent(jLabel20))
+                    .addComponent(btnExportFiles))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnTranslateExport)
-                    .addComponent(btnImportFile)
-                    .addComponent(jRadioButton1)
-                    .addComponent(jRadioButton2))
+                    .addComponent(btnImportFile))
                 .addGap(19, 19, 19))
         );
 
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
-
-    private void jRadioButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton2ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jRadioButton2ActionPerformed
 
     private void btnAddFilesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddFilesActionPerformed
         String inputPath= JOptionPane.showInputDialog("Please enter File Path");
@@ -645,6 +609,13 @@ public class MainGUI extends javax.swing.JFrame {
         refreshGui();
     }//GEN-LAST:event_btnSetExportActionPerformed
 
+    private void btnYandexKeyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnYandexKeyActionPerformed
+        String yandexKeyInput= JOptionPane.showInputDialog("Please enter Yandex Key");
+        settings.saveSetting("string", Utils.SETTINGS_KEY.YANDEX_KEY, yandexKeyInput);
+        JOptionPane.showMessageDialog(this, "Yandex Key Saved", "Info", JOptionPane.INFORMATION_MESSAGE);
+        refreshGui();
+    }//GEN-LAST:event_btnYandexKeyActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -683,32 +654,28 @@ public class MainGUI extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAddFiles;
     private javax.swing.JButton btnExportFiles;
-    private javax.swing.JButton btnFlag;
     private javax.swing.JButton btnImportFile;
     private javax.swing.JButton btnRemoveFiles;
     private javax.swing.JButton btnSave;
     private javax.swing.JButton btnSetExport;
     private javax.swing.JButton btnTranslateAdd;
     private javax.swing.JButton btnTranslateExport;
+    private javax.swing.JButton btnYandexKey;
     private javax.swing.JTextField fieldInput;
     private javax.swing.JTextField filedOutput;
     private javax.swing.JButton jButton4;
-    private javax.swing.JButton jButton5;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel19;
-    private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JRadioButton jRadioButton1;
-    private javax.swing.JRadioButton jRadioButton2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JSeparator jSeparator1;
@@ -725,6 +692,5 @@ public class MainGUI extends javax.swing.JFrame {
     private javax.swing.JTextArea txtAreaFilesPath;
     private javax.swing.JLabel txtExportPath;
     private javax.swing.JLabel txtFileNumber;
-    private javax.swing.JLabel txtPicturePath;
     // End of variables declaration//GEN-END:variables
 }
