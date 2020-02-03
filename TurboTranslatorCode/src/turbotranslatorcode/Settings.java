@@ -4,7 +4,6 @@
  * and open the template in the editor.
  */
 package turbotranslatorcode;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.prefs.*;
@@ -55,7 +54,6 @@ public class Settings {
     
     public List<String> getPathList(){
         String pathValue = getStringValue(Utils.PREFERNCES_PATH_KEY);
-        System.out.println("pathValue: " + pathValue);
         if(pathValue!=null && pathValue.length()>2){
             return Arrays.asList(pathValue.split(Utils.PATH_SPLITTER));
         }

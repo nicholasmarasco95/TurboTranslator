@@ -5,6 +5,8 @@
  */
 package turbotranslatorcode;
 
+import java.io.File;
+
 /**
  *
  * @author nmarasco
@@ -21,6 +23,8 @@ public class Utils {
     public static final String ESCAPE_COMMA_CHARACTER = "|";
     public static final String INFO_LINE = "---------INFO - DO NOT TRANSLATE---------";
     public static final String KEY_COLUMN_STRING = "KEYCODE";
+    public static final String SHEET_INFO_NAME = "filesInfo";
+    public static final String EXPORT_FILE_NAME = "turbo_translation_export.xlsx";
     
     public static String IMPORT_FILE_PATH;
 
@@ -39,12 +43,17 @@ public class Utils {
         public static final String OUTPUT_FOLDER = "uploadpath";
         public static final String LANG_OUTPUT = "lanoutput";
         public static final String LANG_INPUT = "laninput";
+        public static final String DEFAULT_EXPORT_PATH = "defexpath";
+        public static final String YANDEX_KEY = "yandexkey";
     }
     
-    public String exportFileNameCreator(String path, String originExtension){
-        //this will create the name of file that'll be exported. It includes FOLDER_ORIGINFILENAME_ORIGINEXTENSION_LANG.EXTENSION
-        return getFileDirectory(path) + "_" + getFileName(path) + "_" + originExtension + "_" 
-                + settings.getStringValue(SETTINGS_KEY.LANG_OUTPUT) + OUTPUT_FILE_EXTENSION;
+    public static String getYandexKey(){
+        Settings settings = new Settings();
+        return settings.getStringValue(SETTINGS_KEY.YANDEX_KEY);
+    }
+    
+    public String getSheetName(int fileNumber, String fileName){
+        return fileNumber + "_" + fileName;
     }
     
     public String getImportFileExtension(String fileName){
@@ -53,13 +62,8 @@ public class Utils {
         return fileName.substring(fileName.lastIndexOf("_")+1, fileName.length());
     }
     
-    private String getFileDirectory(String path){
-        path = path.substring(0, path.lastIndexOf("\\"));                   //remove file name
-        return path.substring(path.lastIndexOf("\\")+1, path.length());     //get and return directory
-    }
-    
-    private String getFileName(String path){
-        return path.substring(path.lastIndexOf("\\")+1, path.lastIndexOf("."));
+    public String getFileName(String path){
+        return path.substring(path.lastIndexOf("\\")+1, path.length());
     }
     
     public String getTranslatedFileName(String path, String importFileExtension){
@@ -81,6 +85,29 @@ public class Utils {
     
     public static String getFileExtension(String path){
         return path.substring(path.lastIndexOf(".")+1, path.length());
+    }
+    
+    public static boolean pathExists(String path){
+        return new File(path).exists();
+    }
+    
+    public static String getExportFileName(){
+        Settings settings = new Settings();
+        return settings.getStringValue(Utils.SETTINGS_KEY.OUTPUT_FOLDER) + FILE_SEPARATOR + EXPORT_FILE_NAME;
+    }
+    
+    public static String androidPathBuilder(String originalPath){ 
+        if(originalPath.contains("strings.xml")){
+            originalPath = originalPath.substring(0, originalPath.lastIndexOf(FILE_SEPARATOR)+1);
+        }
+        if(originalPath.contains("values")){
+            originalPath = originalPath.substring(0, originalPath.lastIndexOf(FILE_SEPARATOR)+1);
+        }
+        Settings settings = new Settings();
+        String folderName = "values-" + settings.getStringValue(Utils.SETTINGS_KEY.LANG_OUTPUT);
+        String destPath = originalPath + folderName;
+        new File(destPath).mkdir();     //generates destination folder
+        return destPath;
     }
     
 }
