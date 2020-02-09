@@ -18,13 +18,14 @@ public class Utils {
     public static final String PREFERNCES_PATH_KEY = "totranslatefile";
     public static final String PATH_SPLITTER = "--";
     public static final String OUTPUT_FILE_EXTENSION = ".csv";
-    public static final String FILE_SEPARATOR = "\\";
+    public static String FILE_SEPARATOR = "\\";
     public static final String LINE_ERROR_MESSAGE = "***********LINE ERROR MESSAGE***********";
     public static final String ESCAPE_COMMA_CHARACTER = "|";
     public static final String INFO_LINE = "---------INFO - DO NOT TRANSLATE---------";
     public static final String KEY_COLUMN_STRING = "KEYCODE";
     public static final String SHEET_INFO_NAME = "filesInfo";
     public static final String EXPORT_FILE_NAME = "turbo_translation_export.xlsx";
+    public static final String IMPORT_FILE_EXTENSION = "xlsx";
     
     public static String IMPORT_FILE_PATH;
 
@@ -37,6 +38,12 @@ public class Utils {
         public static final String XML = "xml";
         public static final String JSON = "json";
         public static final String JS = "js";
+    }
+    
+    public static enum PICKER_TYPE {
+        ADD_FILES,
+        EXPORT_FOLDER,
+        IMPORT_FILE
     }
     
     public static class SETTINGS_KEY {
@@ -83,6 +90,10 @@ public class Utils {
         return false;
     }
     
+    public static boolean isImportFileSupported(String extension){
+        return extension.equals(IMPORT_FILE_EXTENSION);
+    }
+    
     public static String getFileExtension(String path){
         return path.substring(path.lastIndexOf(".")+1, path.length());
     }
@@ -97,17 +108,21 @@ public class Utils {
     }
     
     public static String androidPathBuilder(String originalPath){ 
-        if(originalPath.contains("strings.xml")){
-            originalPath = originalPath.substring(0, originalPath.lastIndexOf(FILE_SEPARATOR)+1);
-        }
-        if(originalPath.contains("values")){
-            originalPath = originalPath.substring(0, originalPath.lastIndexOf(FILE_SEPARATOR)+1);
-        }
+        originalPath = originalPath.substring(0, originalPath.lastIndexOf(FILE_SEPARATOR)+1);
+        originalPath = originalPath.substring(0, originalPath.lastIndexOf(FILE_SEPARATOR)+1);
         Settings settings = new Settings();
         String folderName = "values-" + settings.getStringValue(Utils.SETTINGS_KEY.LANG_OUTPUT);
         String destPath = originalPath + folderName;
         new File(destPath).mkdir();     //generates destination folder
         return destPath;
+    }
+    
+    private static boolean isWindows(){
+        return System.getProperty("os.name").contains("Windows");
+    }
+    
+    public static void folderSparatorInit(){
+        if(!isWindows()) FILE_SEPARATOR = "/";  //if not Windows OS, change file separator
     }
     
 }

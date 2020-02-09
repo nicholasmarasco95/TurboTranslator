@@ -53,7 +53,6 @@ public class TurboReader implements Runnable{
     private Utils utils;
     private OnlineTranslator onlineTranslator;
     private boolean autoTranslate;
-    private boolean translateExport;
     private boolean fileImport;
     private String toTranslateLan;
     private String originLan;
@@ -71,13 +70,12 @@ public class TurboReader implements Runnable{
     private ArrayList<Object[]> sheetInfoRows;
     
 
-    public TurboReader(boolean autoTranslate, boolean translateExport, boolean fileImport, JTextArea textAreaLogs, JLabel textWordsTranslated, JLabel textFilesDone) {
+    public TurboReader(boolean autoTranslate, boolean fileImport, JTextArea textAreaLogs, JLabel textWordsTranslated, JLabel textFilesDone) {
         settings = new Settings();
         utils = new Utils();
         toTranslateLan = settings.getStringValue(Utils.SETTINGS_KEY.LANG_OUTPUT);
         originLan = settings.getStringValue(Utils.SETTINGS_KEY.LANG_INPUT);
         this.autoTranslate = autoTranslate;
-        this.translateExport = translateExport;
         this.textAreaLogs = textAreaLogs;
         this.textWordsTranslated = textWordsTranslated;
         this.fileImport = fileImport;
@@ -134,7 +132,7 @@ public class TurboReader implements Runnable{
     }
     
     private void fileSplitter(String path){
-        //check extension and filter file creating 3 columns (KEY, ENGLISH, LAN_TO_TRANSLATE)
+        //check extension and filter file creating 3 columns (KEY, LAN_FROM, LAN_TO_TRANSLATE)
         File file = new File(path);
         String tmpLine = "", translatedStr = "", firstLine = "", tmpKey = "", jsonFileStr = "", sheetName = "";
         Object fileInfoObj[] = null;
@@ -355,9 +353,9 @@ public class TurboReader implements Runnable{
             workbook.write(outputStream);
             workbook.close();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            System.err.println("Fatal, FileNotFoundException: " + e);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Fatal, IOException: " + e);
         }
     }
     
@@ -488,7 +486,7 @@ public class TurboReader implements Runnable{
         if(new File(originalDestPath).exists()){
             writeFile(listRowToWrite, fileName, originalDestPath);
             this.textAreaLogs.append("File Saved on: " + originalDestPath + "\n");
-        }else{
+        }else if(originalDestPath.length()>2){
             //if file path got from filesInfo sheet doesn't exists, export to OUTPUT_FOLDER
             String defaultExportPath = settings.getStringValue(Utils.SETTINGS_KEY.OUTPUT_FOLDER);
             JOptionPane.showMessageDialog(null, "Original File Path doen's exists, exporting to: " + defaultExportPath, "Warning", JOptionPane.WARNING_MESSAGE);
