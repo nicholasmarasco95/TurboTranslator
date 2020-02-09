@@ -29,6 +29,8 @@ public class MainGUI extends javax.swing.JFrame {
         this.settings = new Settings();
         this.error = false;
         
+        Utils.folderSparatorInit();  //check OS and change folder separator
+        
         refreshGui();
     }
     
@@ -83,7 +85,6 @@ public class MainGUI extends javax.swing.JFrame {
         
         //Action Buttons Manager
         boolean enabled = !error;
-        btnTranslateAdd.setEnabled(enabled);
         btnTranslateExport.setEnabled(enabled);
         btnExportFiles.setEnabled(enabled);
         
@@ -99,40 +100,9 @@ public class MainGUI extends javax.swing.JFrame {
         String yandexKey = Utils.getYandexKey();
         if(yandexKey == null || yandexKey.length()<=2){
             this.btnYandexKey.setForeground(Color.red);
-            btnTranslateAdd.setEnabled(false);
             btnTranslateExport.setEnabled(false);
         }
         else this.btnYandexKey.setForeground(Color.black);
-    }
-    
-    private boolean checkFilePath(String path, boolean isCsv){
-        if(!new File(path).exists()){
-            JOptionPane.showMessageDialog(this, "File doesn't exists", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        if(isCsv){
-            if(Utils.getFileExtension(path).equals(".csv")){
-                JOptionPane.showMessageDialog(this, "Only CSV files are supported", "Error", JOptionPane.ERROR_MESSAGE);
-                return false;
-            }
-        }
-        else if(!Utils.isFileSupported(Utils.getFileExtension(path))){
-            JOptionPane.showMessageDialog(this, "File not supported", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-    
-    private boolean checkDirectory(String path){
-        File file = new File(path);
-        if(!file.exists()){
-            JOptionPane.showMessageDialog(this, "Directory doesn't exists", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }else if(file.isDirectory()){
-            JOptionPane.showMessageDialog(this, "Only directory are allowed", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
-        }
-        return true;
     }
 
     /**
@@ -173,7 +143,6 @@ public class MainGUI extends javax.swing.JFrame {
         jLabel19 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         textAreaLogs = new javax.swing.JTextArea();
-        btnTranslateAdd = new javax.swing.JButton();
         btnTranslateExport = new javax.swing.JButton();
         btnExportFiles = new javax.swing.JButton();
         btnImportFile = new javax.swing.JButton();
@@ -286,15 +255,6 @@ public class MainGUI extends javax.swing.JFrame {
         textAreaLogs.setRows(5);
         jScrollPane2.setViewportView(textAreaLogs);
 
-        btnTranslateAdd.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
-        btnTranslateAdd.setForeground(new java.awt.Color(153, 255, 0));
-        btnTranslateAdd.setText("Translate & Add to Project");
-        btnTranslateAdd.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnTranslateAddActionPerformed(evt);
-            }
-        });
-
         btnTranslateExport.setFont(new java.awt.Font("Microsoft Tai Le", 1, 14)); // NOI18N
         btnTranslateExport.setText("Translate & Export");
         btnTranslateExport.addActionListener(new java.awt.event.ActionListener() {
@@ -326,10 +286,10 @@ public class MainGUI extends javax.swing.JFrame {
         textInputStr.setText("Input Language: ");
 
         fieldInput.addInputMethodListener(new java.awt.event.InputMethodListener() {
-            public void caretPositionChanged(java.awt.event.InputMethodEvent evt) {
-            }
             public void inputMethodTextChanged(java.awt.event.InputMethodEvent evt) {
                 fieldInputInputMethodTextChanged(evt);
+            }
+            public void caretPositionChanged(java.awt.event.InputMethodEvent evt) {
             }
         });
         fieldInput.addActionListener(new java.awt.event.ActionListener() {
@@ -402,13 +362,11 @@ public class MainGUI extends javax.swing.JFrame {
                             .addComponent(jLabel19)
                             .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 543, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(btnTranslateAdd)
-                                    .addComponent(btnTranslateExport))
-                                .addGap(30, 30, 30)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(btnImportFile)
-                                    .addComponent(btnExportFiles))))
+                                .addComponent(btnTranslateExport)
+                                .addGap(18, 18, 18)
+                                .addComponent(btnExportFiles)
+                                .addGap(18, 18, 18)
+                                .addComponent(btnImportFile)))
                         .addGap(0, 16, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -482,17 +440,15 @@ public class MainGUI extends javax.swing.JFrame {
                             .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                                 .addComponent(jLabel18)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnYandexKey)))
-                        .addGap(19, 19, 19))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                        .addGap(44, 44, 44)))
+                                .addComponent(btnYandexKey))))
+                    .addComponent(jScrollPane1))
+                .addGap(19, 19, 19)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(txtExportPath))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jSeparator5, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel5)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -527,16 +483,13 @@ public class MainGUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel19)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 122, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnTranslateAdd)
-                    .addComponent(btnExportFiles))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnExportFiles)
                     .addComponent(btnTranslateExport)
                     .addComponent(btnImportFile))
-                .addGap(19, 19, 19))
+                .addGap(26, 26, 26))
         );
 
         pack();
@@ -544,10 +497,7 @@ public class MainGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnAddFilesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddFilesActionPerformed
-        String inputPath= JOptionPane.showInputDialog("Please enter File Path");
-        if(!checkFilePath(inputPath, false)) return;
-        settings.addPath(inputPath);
-        JOptionPane.showMessageDialog(this, "File added", "Info", JOptionPane.INFORMATION_MESSAGE);
+        new FolderPicker(this, true, Utils.PICKER_TYPE.ADD_FILES).setVisible(true);
         refreshGui();
     }//GEN-LAST:event_btnAddFilesActionPerformed
 
@@ -557,25 +507,23 @@ public class MainGUI extends javax.swing.JFrame {
         refreshGui();
     }//GEN-LAST:event_btnRemoveFilesActionPerformed
 
-    private void btnTranslateAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTranslateAddActionPerformed
-        new Thread(new TurboReader(true, false, false, this.textAreaLogs, textWordsTranslated, textFilesDone)).start();
-    }//GEN-LAST:event_btnTranslateAddActionPerformed
-
     private void btnImportFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportFileActionPerformed
-        String inputPath= JOptionPane.showInputDialog("Please enter File Path");
-        if(!checkFilePath(inputPath, true)) return;
-        Utils.IMPORT_FILE_PATH = inputPath;
-        JOptionPane.showMessageDialog(this, "File will be saved into Export Folder", "Info", JOptionPane.INFORMATION_MESSAGE);
-        new Thread(new TurboReader(false, false, true, this.textAreaLogs, textWordsTranslated, textFilesDone)).start();
-        JOptionPane.showMessageDialog(this, "Import Started", "Info", JOptionPane.INFORMATION_MESSAGE);
+        new FolderPicker(this, true, Utils.PICKER_TYPE.IMPORT_FILE).setVisible(true);
+        refreshGui();
+        if(Utils.IMPORT_FILE_PATH!=null && Utils.IMPORT_FILE_PATH.length()>2){
+            new Thread(new TurboReader(false, true, this.textAreaLogs, textWordsTranslated, textFilesDone)).start();
+            JOptionPane.showMessageDialog(this, "Import Started", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        JOptionPane.showMessageDialog(this, "No import file, action stopped!", "Error", JOptionPane.ERROR_MESSAGE);
     }//GEN-LAST:event_btnImportFileActionPerformed
 
     private void btnTranslateExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTranslateExportActionPerformed
-        new Thread(new TurboReader(true, true, false, this.textAreaLogs, textWordsTranslated, textFilesDone)).start();
+        new Thread(new TurboReader(true, false, this.textAreaLogs, textWordsTranslated, textFilesDone)).start();
     }//GEN-LAST:event_btnTranslateExportActionPerformed
 
     private void btnExportFilesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExportFilesActionPerformed
-        new Thread(new TurboReader(false, true, false, this.textAreaLogs, textWordsTranslated, textFilesDone)).start();
+        new Thread(new TurboReader(false, false, this.textAreaLogs, textWordsTranslated, textFilesDone)).start();
     }//GEN-LAST:event_btnExportFilesActionPerformed
 
     private void fieldInputKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_fieldInputKeyTyped
@@ -601,11 +549,7 @@ public class MainGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnSaveActionPerformed
 
     private void btnSetExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSetExportActionPerformed
-        String inputPath= JOptionPane.showInputDialog("Please enter File Path");
-        if(!checkFilePath(inputPath, true)) return;
-        checkDirectory(inputPath);
-        settings.saveSetting("string", Utils.SETTINGS_KEY.OUTPUT_FOLDER, inputPath);
-        JOptionPane.showMessageDialog(this, "Export Path Saved", "Info", JOptionPane.INFORMATION_MESSAGE);
+        new FolderPicker(this, true, Utils.PICKER_TYPE.EXPORT_FOLDER).setVisible(true);
         refreshGui();
     }//GEN-LAST:event_btnSetExportActionPerformed
 
@@ -658,7 +602,6 @@ public class MainGUI extends javax.swing.JFrame {
     private javax.swing.JButton btnRemoveFiles;
     private javax.swing.JButton btnSave;
     private javax.swing.JButton btnSetExport;
-    private javax.swing.JButton btnTranslateAdd;
     private javax.swing.JButton btnTranslateExport;
     private javax.swing.JButton btnYandexKey;
     private javax.swing.JTextField fieldInput;
